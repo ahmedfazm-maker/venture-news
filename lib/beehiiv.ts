@@ -21,37 +21,11 @@ export async function createDraftPost(
   htmlContent: string,
   previewText?: string
 ): Promise<string> {
-  const { apiKey, pubId } = getCredentials();
-
-  const body = {
-    subject_line: title,
-    preview_text: previewText ?? "",
-    content_tags: [],
-    status: "draft",
-    content: {
-      free: htmlContent,
-    },
-  };
-
-  const res = await fetch(
-    `${BEEHIIV_API_BASE}/publications/${pubId}/posts`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    const error = await res.text();
-    throw new Error(`Beehiiv createPost error ${res.status}: ${error}`);
-  }
-
-  const data = (await res.json()) as BeehiivPostResponse;
-  return data.data.id;
+  // TEMP: Replace with real Beehiiv API call once verified
+  console.log("[beehiiv] createDraftPost called with title:", title);
+  console.log("[beehiiv] previewText:", previewText);
+  console.log("[beehiiv] htmlContent:", htmlContent);
+  return "test-post-123";
 }
 
 export async function getPost(postId: string): Promise<BeehiivPostResponse["data"]> {
