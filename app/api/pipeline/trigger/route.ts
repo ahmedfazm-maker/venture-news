@@ -11,7 +11,7 @@ function getWeekString(): string {
   return `${year}-W${String(week).padStart(2, "0")}`;
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   const cronSecret = request.headers.get("authorization");
   const expected = `Bearer ${process.env.CRON_SECRET}`;
 
