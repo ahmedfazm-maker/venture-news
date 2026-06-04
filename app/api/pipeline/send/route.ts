@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { getJob, updateJob } from "@/lib/kv";
 import { renderNewsletterHtml } from "@/lib/email-template";
-import { createDraftPost } from "@/lib/beehiiv";
+import { createDraftPost } from "@/lib/email-provider";
 
 async function sendConfirmationEmail(
   postId: string,
-  week: string,
-  pubId: string
+  week: string
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.log(`[send] RESEND_API_KEY not set. Beehiiv post created: ${postId}`);
+    console.log(`[send] RESEND_API_KEY not set. Buttondown draft created: ${postId}`);
     return;
   }
 
@@ -20,7 +19,7 @@ async function sendConfirmationEmail(
     .filter(Boolean);
   if (emails.length === 0) return;
 
-  const beehiivDraftUrl = `https://app.beehiiv.com/publications/${pubId}/posts/${postId}`;
+  const buttondownDraftUrl = `https://buttondown.com/emails/${postId}`;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -31,12 +30,12 @@ async function sendConfirmationEmail(
     body: JSON.stringify({
       from: "onboarding@resend.dev",
       to: emails,
-      subject: `Venture News draft created in Beehiiv — Week ${week}`,
+      subject: `Venture News draft created in Buttondown — Week ${week}`,
       html: `
-        <p>The newsletter draft for <strong>${week}</strong> has been created in Beehiiv as a <strong>draft</strong>.</p>
-        <p>Post ID: <code>${postId}</code></p>
-        <p><a href="${beehiivDraftUrl}" style="background:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">View in Beehiiv</a></p>
-        <p style="color:#888;font-size:12px;">Schedule and send it from the Beehiiv dashboard when ready.</p>
+        <p>The newsletter draft for <strong>${week}</strong> has been created in Buttondown as a <strong>draft</strong>.</p>
+        <p>Email ID: <code>${postId}</code></p>
+        <p><a href="${buttondownDraftUrl}" style="background:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">View in Buttondown</a></p>
+        <p style="color:#888;font-size:12px;">Schedule and send it from the Buttondown dashboard when ready.</p>
       `,
     }),
   });
@@ -76,12 +75,11 @@ export async function POST(): Promise<NextResponse> {
       beehiiv_post_id: postId,
     });
 
-    const pubId = process.env.BEEHIIV_PUBLICATION_ID ?? "";
-    await sendConfirmationEmail(postId, job.week, pubId).catch((err) => {
+    await sendConfirmationEmail(postId, job.week).catch((err) => {
       console.error("Confirmation email failed:", err);
     });
 
-    return NextResponse.json({ ok: true, beehiiv_post_id: postId });
+    return NextResponse.json({ ok: true, email_draft_id: postId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await updateJob({ status: "failed", error: message }).catch(() => {});
