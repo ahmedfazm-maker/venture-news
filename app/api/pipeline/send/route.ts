@@ -1,26 +1,19 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { getJob, updateJob } from "@/lib/kv";
 import { renderNewsletterHtml } from "@/lib/email-template";
 import { createDraftPost } from "@/lib/beehiiv";
-
-function createMailTransport() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT ?? "587", 10),
-    secure: process.env.SMTP_PORT === "465",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-}
 
 async function sendConfirmationEmail(
   postId: string,
   week: string,
   pubId: string
 ): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log(`[send] RESEND_API_KEY not set. Beehiiv post created: ${postId}`);
+    return;
+  }
+
   const emails = (process.env.FOUNDER_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim())
@@ -29,19 +22,29 @@ async function sendConfirmationEmail(
 
   const beehiivDraftUrl = `https://app.beehiiv.com/publications/${pubId}/posts/${postId}`;
 
-  const transporter = createMailTransport();
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
-    to: emails.join(", "),
-    subject: `[Venture News] Draft created in Beehiiv — ${week}`,
-    text: `The newsletter draft for ${week} has been created in Beehiiv.\n\nPost ID: ${postId}\n\nView and schedule it here:\n${beehiivDraftUrl}`,
-    html: `
-      <p>The newsletter draft for <strong>${week}</strong> has been created in Beehiiv as a <strong>draft</strong>.</p>
-      <p>Post ID: <code>${postId}</code></p>
-      <p><a href="${beehiivDraftUrl}" style="background:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">View in Beehiiv</a></p>
-      <p style="color:#888;font-size:12px;">Schedule and send it from the Beehiiv dashboard when ready.</p>
-    `,
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      from: "onboarding@resend.dev",
+      to: emails,
+      subject: `Venture News draft created in Beehiiv — Week ${week}`,
+      html: `
+        <p>The newsletter draft for <strong>${week}</strong> has been created in Beehiiv as a <strong>draft</strong>.</p>
+        <p>Post ID: <code>${postId}</code></p>
+        <p><a href="${beehiivDraftUrl}" style="background:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">View in Beehiiv</a></p>
+        <p style="color:#888;font-size:12px;">Schedule and send it from the Beehiiv dashboard when ready.</p>
+      `,
+    }),
   });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Resend error ${res.status}: ${error}`);
+  }
 }
 
 export async function POST(): Promise<NextResponse> {

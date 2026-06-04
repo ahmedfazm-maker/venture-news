@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import nodemailer from "nodemailer";
 import { getJob, updateJob } from "@/lib/kv";
 import {
   callClaude,
@@ -23,38 +22,41 @@ function getWeekMod(weekString: string): number {
   return (parseInt(match[1], 10) - 1) % 4;
 }
 
-function createMailTransport() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT ?? "587", 10),
-    secure: process.env.SMTP_PORT === "465",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-}
-
 async function sendReviewEmail(
   reviewUrl: string,
   week: string
 ): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log(`[generate-draft] RESEND_API_KEY not set. Review link: ${reviewUrl}`);
+    return;
+  }
+
   const emails = (process.env.FOUNDER_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
   if (emails.length === 0) return;
 
-  const transporter = createMailTransport();
-
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
-    to: emails.join(", "),
-    subject: `[Venture News] Draft ready for review — ${week}`,
-    text: `Your newsletter draft for ${week} is ready.\n\nReview and approve here:\n${reviewUrl}\n\nThe link expires if you generate a new draft.`,
-    html: `
-      <p>Your newsletter draft for <strong>${week}</strong> is ready.</p>
-      <p><a href="${reviewUrl}" style="background:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">Review &amp; Approve Draft</a></p>
-      <p style="color:#888;font-size:12px;">The link expires if you generate a new draft.</p>
-    `,
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      from: "onboarding@resend.dev",
+      to: emails,
+      subject: `Venture News draft ready — Week ${week}`,
+      html: `
+        <p>Your newsletter draft for <strong>${week}</strong> is ready.</p>
+        <p><a href="${reviewUrl}" style="background:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">Review &amp; Approve Draft</a></p>
+        <p style="color:#888;font-size:12px;">The link expires if you generate a new draft.</p>
+      `,
+    }),
   });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Resend error ${res.status}: ${error}`);
+  }
 }
 
 export async function POST(): Promise<NextResponse> {
