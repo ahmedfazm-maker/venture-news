@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Job } from "@/lib/kv";
 
 type Draft = NonNullable<Job["draft"]>;
@@ -25,6 +25,13 @@ export default function ReviewPage() {
     submitted: false,
     submitMessage: "",
   });
+  const [previewKey, setPreviewKey] = useState(0);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  const refreshPreview = useCallback((token: string) => {
+    setPreviewSrc(`/api/pipeline/preview?token=${encodeURIComponent(token)}`);
+    setPreviewKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -45,6 +52,7 @@ export default function ReviewPage() {
       })
       .then((draft) => {
         setState((s) => ({ ...s, loading: false, draft, token }));
+        refreshPreview(token);
       })
       .catch((err: Error) => {
         setState((s) => ({ ...s, loading: false, error: err.message }));
@@ -102,7 +110,7 @@ export default function ReviewPage() {
         submitted: true,
         submitMessage:
           action === "approve"
-            ? "Draft approved and sent to Beehiiv. Check your email for confirmation."
+            ? "Draft approved and sent to Buttondown. Check your email for confirmation."
             : "Draft rejected. A new draft is being generated — check your email shortly.",
       }));
     } catch (err) {
@@ -147,7 +155,7 @@ export default function ReviewPage() {
           <p style={styles.label}>Venture News — Draft Review</p>
           <h1 style={styles.title}>Review this week&apos;s newsletter</h1>
           <p style={styles.subtitle}>
-            Edit any section below, then approve to send to Beehiiv or reject to regenerate.
+            Edit any section below, then approve to send to Buttondown or reject to regenerate.
           </p>
         </header>
 
@@ -182,6 +190,27 @@ export default function ReviewPage() {
           </div>
         ))}
 
+        <div style={styles.previewSection}>
+          <div style={styles.previewHeader}>
+            <h2 style={styles.previewTitle}>Preview Email</h2>
+            <button
+              style={styles.refreshButton}
+              onClick={() => state.token && refreshPreview(state.token)}
+            >
+              ↻ Refresh Preview
+            </button>
+          </div>
+          {previewSrc && (
+            <iframe
+              key={previewKey}
+              src={previewSrc}
+              title="Email preview"
+              style={styles.previewIframe}
+              scrolling="yes"
+            />
+          )}
+        </div>
+
         <div style={styles.actions}>
           <button
             style={styles.rejectButton}
@@ -211,7 +240,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "Georgia, serif",
   },
   container: {
-    maxWidth: 720,
+    maxWidth: 760,
     margin: "0 auto",
   },
   header: {
@@ -301,6 +330,47 @@ const styles: Record<string, React.CSSProperties> = {
     resize: "vertical",
     boxSizing: "border-box",
     color: "#333",
+  },
+  previewSection: {
+    marginTop: 32,
+    marginBottom: 8,
+  },
+  previewHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottom: "1px solid #ddd",
+  },
+  previewTitle: {
+    margin: 0,
+    fontSize: 11,
+    fontFamily: "'Helvetica Neue', sans-serif",
+    fontWeight: "bold",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: "#888",
+  },
+  refreshButton: {
+    padding: "7px 16px",
+    fontSize: 12,
+    fontFamily: "'Helvetica Neue', sans-serif",
+    fontWeight: "bold",
+    backgroundColor: "#fff",
+    color: "#02686F",
+    border: "1px solid #02686F",
+    borderRadius: 4,
+    cursor: "pointer",
+  },
+  previewIframe: {
+    display: "block",
+    width: 600,
+    height: 800,
+    margin: "0 auto",
+    border: "1px solid #ddd",
+    borderRadius: 4,
+    backgroundColor: "#fff",
   },
   actions: {
     display: "flex",
