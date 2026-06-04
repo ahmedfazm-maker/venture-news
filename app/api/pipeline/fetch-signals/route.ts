@@ -22,7 +22,7 @@ interface RawItem {
 async function fetchRssFeed(source: FeedSource): Promise<RawItem[]> {
   const res = await fetch(source.url, {
     headers: { "User-Agent": "VentureNews/1.0" },
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(5000),
   });
 
   if (!res.ok) return [];
@@ -105,7 +105,7 @@ export async function POST(): Promise<NextResponse> {
   ]
 }
 
-Return the top 8 by score only. Items:
+Return the top 5 by score only. Items:
 ${JSON.stringify(allItems, null, 2)}`;
 
     const response = await callClaude(prompt, [{ role: "user", content: userMessage }], 3000);
@@ -114,7 +114,7 @@ ${JSON.stringify(allItems, null, 2)}`;
     try {
       const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
       const parsed = JSON.parse(cleaned) as { signals: Signal[] };
-      signals = parsed.signals.slice(0, 8);
+      signals = parsed.signals.slice(0, 5);
     } catch (parseErr) {
       console.error("[fetch-signals] Claude parse error:", parseErr);
       console.error("[fetch-signals] Raw Claude response:", response);

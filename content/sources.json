@@ -14,27 +14,6 @@
     "priority": "high"
   },
   {
-    "name": "ADGM News",
-    "url": "https://www.adgm.com/rss",
-    "type": "rss",
-    "region": "UAE",
-    "priority": "high"
-  },
-  {
-    "name": "CMA Saudi Arabia",
-    "url": "https://cma.org.sa/en/MediaCenter/News/rss",
-    "type": "rss",
-    "region": "KSA",
-    "priority": "high"
-  },
-  {
-    "name": "DIFC News",
-    "url": "https://www.difc.ae/rss",
-    "type": "rss",
-    "region": "UAE",
-    "priority": "medium"
-  },
-  {
     "name": "Crunchbase MENA",
     "url": "https://news.crunchbase.com/tag/middle-east/feed",
     "type": "rss",
@@ -44,13 +23,6 @@
   {
     "name": "TechCrunch Startups",
     "url": "https://techcrunch.com/category/startups/feed",
-    "type": "rss",
-    "region": "Global",
-    "priority": "low"
-  },
-  {
-    "name": "Sifted",
-    "url": "https://sifted.eu/feed",
     "type": "rss",
     "region": "Global",
     "priority": "low"
