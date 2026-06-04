@@ -112,11 +112,15 @@ ${JSON.stringify(allItems, null, 2)}`;
 
     let signals: Signal[];
     try {
-      const parsed = JSON.parse(response) as { signals: Signal[] };
+      const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+      const parsed = JSON.parse(cleaned) as { signals: Signal[] };
       signals = parsed.signals.slice(0, 8);
-    } catch {
-      await updateJob({ status: "failed", error: "Failed to parse Claude scoring response" });
-      return NextResponse.json({ error: "Parse error" }, { status: 500 });
+    } catch (parseErr) {
+      console.error("[fetch-signals] Claude parse error:", parseErr);
+      console.error("[fetch-signals] Raw Claude response:", response);
+      const error = `Failed to parse Claude scoring response: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`;
+      await updateJob({ status: "failed", error });
+      return NextResponse.json({ error, raw_response: response }, { status: 500 });
     }
 
     await updateJob({ status: "signals_ready", signals });

@@ -101,9 +101,12 @@ Return ONLY valid JSON in this exact shape:
       );
 
       try {
-        const parsed = JSON.parse(response) as DraftSection;
+        const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const parsed = JSON.parse(cleaned) as DraftSection;
         sections.push(parsed);
-      } catch {
+      } catch (parseErr) {
+        console.error(`[generate-draft] Failed to parse section "${section.id}":`, parseErr);
+        console.error("[generate-draft] Raw response:", response);
         sections.push({
           id: section.id,
           name: section.name,
@@ -133,13 +136,16 @@ Return ONLY valid JSON:
     let previewText = "";
 
     try {
-      const meta = JSON.parse(metaResponse) as {
+      const cleanedMeta = metaResponse.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+      const meta = JSON.parse(cleanedMeta) as {
         subject_line: string;
         preview_text: string;
       };
       subjectLine = meta.subject_line;
       previewText = meta.preview_text;
-    } catch {
+    } catch (parseErr) {
+      console.error("[generate-draft] Failed to parse subject/preview:", parseErr);
+      console.error("[generate-draft] Raw response:", metaResponse);
       // use defaults
     }
 
