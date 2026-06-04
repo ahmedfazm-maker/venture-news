@@ -87,14 +87,15 @@ ${sectionsHtml}
 // ─── Section dispatcher ───────────────────────────────────────────────────────
 
 function renderSection(section: Section, draft: Draft): string {
-  switch (section.id) {
-    case "the_signal":         return sectionSignal(section, draft);
-    case "why_it_matters":     return sectionWhyItMatters(section);
-    case "the_stack":          return sectionStack(section);
-    case "the_translation_layer": return sectionTranslation(section);
-    case "the_ecosystem_radar":   return sectionEcosystem(section);
-    case "the_sign_off":       return sectionSignOff(section);
-    default:                   return sectionDefault(section);
+  const s: Section = { ...section, content: extractContent(section.content) };
+  switch (s.id) {
+    case "the_signal":            return sectionSignal(s, draft);
+    case "why_it_matters":        return sectionWhyItMatters(s);
+    case "the_stack":             return sectionStack(s);
+    case "the_translation_layer": return sectionTranslation(s);
+    case "the_ecosystem_radar":   return sectionEcosystem(s);
+    case "the_sign_off":          return sectionSignOff(s);
+    default:                      return sectionDefault(s);
   }
 }
 
@@ -278,7 +279,9 @@ function bodyText(text: string, color: string = C.body): string {
 
   const flushList = () => {
     if (listItems.length) {
+      chunks.push("");
       chunks.push(`<ul style="margin:0 0 16px;padding-left:0;list-style:none;">${listItems.join("")}</ul>`);
+      chunks.push("");
       listItems = [];
     }
   };
@@ -286,11 +289,12 @@ function bodyText(text: string, color: string = C.body): string {
   for (const raw of lines) {
     const isBullet = /^[-•●]\s+/.test(raw);
     if (isBullet) {
-      listItems.push(`<li style="margin-bottom:8px;padding-left:18px;position:relative;font-family:${SERIF};font-size:16px;line-height:1.7;color:${color};">
-        <span style="position:absolute;left:0;color:${C.accent};">&#9679;</span>${inlineMarkdown(raw.replace(/^[-•●]\s+/, ""))}</li>`);
+      flushList();
+      listItems.push(`<li style="margin-bottom:8px;padding-left:18px;position:relative;font-family:${SERIF};font-size:16px;line-height:1.7;color:${color};"><span style="position:absolute;left:0;color:${C.accent};">&#9679;</span>${inlineMarkdown(raw.replace(/^[-•●]\s+/, ""))}</li>`);
     } else {
       flushList();
-      if (raw.trim()) chunks.push(raw);
+      // Preserve blank lines as paragraph separators; process non-empty lines
+      chunks.push(raw.trim() ? inlineMarkdown(raw) : "");
     }
   }
   flushList();
@@ -308,10 +312,24 @@ function bodyText(text: string, color: string = C.body): string {
     .join("\n");
 }
 
+// Handles a single line or inline span: strips block-level syntax then converts markdown
 function inlineMarkdown(text: string): string {
-  return esc(text)
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+  // Process per-line so block markers (# > ---) are stripped correctly
+  const cleaned = text
+    .split("\n")
+    .map((line) => {
+      if (/^\s*[-*_]{3,}\s*$/.test(line)) return ""; // horizontal rule → empty
+      line = line.replace(/^#{1,6}\s+/, "");           // strip heading markers
+      line = line.replace(/^>\s*/, "");                 // strip blockquote markers
+      return line;
+    })
+    .join("\n");
+
+  return esc(cleaned)
+    .replace(/`([^`\n]+)`/g, "$1")                    // strip inline code backticks
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")          // strip links, keep label
+    .replace(/\*\*(.+?)\*\*/gs, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/gs, "<em>$1</em>");
 }
 
 function esc(text: string): string {
@@ -320,4 +338,23 @@ function esc(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// Guard: if Claude returned raw JSON as content on a parse failure, extract just the text
+function extractContent(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("{")) return raw;
+  try {
+    const obj = JSON.parse(trimmed) as Record<string, unknown>;
+    if (typeof obj["content"] === "string") return obj["content"] as string;
+  } catch {
+    const match = trimmed.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (match) {
+      return match[1]
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
+    }
+  }
+  return raw;
 }
