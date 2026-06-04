@@ -39,6 +39,7 @@ export interface Job {
     subject_line: string;
     preview_text: string;
     sections: DraftSection[];
+    visual?: string;
   };
   review_token?: string;
   beehiiv_post_id?: string;

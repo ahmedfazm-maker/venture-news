@@ -78,6 +78,7 @@ export async function POST(): Promise<NextResponse> {
     const signalContext = JSON.stringify(job.signals, null, 2);
 
     const sections: DraftSection[] = [];
+    let visualHtml: string | undefined;
 
     for (const section of sectionDefs) {
       const userMessage = `Write the "${section.name}" section of this week's newsletter.
@@ -102,18 +103,52 @@ Return ONLY valid JSON in this exact shape:
         1500
       );
 
+      let parsed: DraftSection;
       try {
         const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-        const parsed = JSON.parse(cleaned) as DraftSection;
-        sections.push(parsed);
+        parsed = JSON.parse(cleaned) as DraftSection;
       } catch (parseErr) {
         console.error(`[generate-draft] Failed to parse section "${section.id}":`, parseErr);
         console.error("[generate-draft] Raw response:", response);
-        sections.push({
-          id: section.id,
-          name: section.name,
-          content: response,
-        });
+        parsed = { id: section.id, name: section.name, content: response };
+      }
+      sections.push(parsed);
+
+      if (section.id === "the_signal") {
+        const visualPrompt = `Based on The Signal content below, decide whether it is better illustrated by a "chart" or a "grid", then generate the visual as self-contained HTML with inline CSS only (no external resources, no <script> tags, no SVG).
+
+"grid" format: a 2×2 HTML table. Each cell contains:
+- A large bold number (the key metric value, e.g. "$240M" or "34%")
+- A short metric label in smaller text below it
+- A tiny source citation in muted text below that
+
+"chart" format: a simple bar chart using HTML divs with inline styles. Use #111 bars on a white background. Label each bar. Show the value above or inside the bar.
+
+The visual must fit within 520px wide. No JavaScript. No SVG. No external fonts.
+
+The Signal:
+${parsed.content}
+
+Return ONLY valid JSON:
+{
+  "type": "chart" | "grid",
+  "html": "complete self-contained HTML string with all styles inline"
+}`;
+
+        const visualResponse = await callClaude(
+          systemPrompt,
+          [{ role: "user", content: visualPrompt }],
+          2000
+        );
+
+        try {
+          const cleanedVisual = visualResponse.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+          const visualParsed = JSON.parse(cleanedVisual) as { type: string; html: string };
+          visualHtml = visualParsed.html;
+        } catch (parseErr) {
+          console.error("[generate-draft] Failed to parse visual response:", parseErr);
+          console.error("[generate-draft] Raw visual response:", visualResponse);
+        }
       }
     }
 
@@ -157,7 +192,7 @@ Return ONLY valid JSON:
 
     await updateJob({
       status: "awaiting_review",
-      draft: { subject_line: subjectLine, preview_text: previewText, sections },
+      draft: { subject_line: subjectLine, preview_text: previewText, sections, visual: visualHtml },
       review_token: reviewToken,
     });
 
