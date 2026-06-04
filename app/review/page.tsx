@@ -195,7 +195,7 @@ export default function ReviewPage() {
             onClick={() => submit("approve")}
             disabled={state.submitting}
           >
-            {state.submitting ? "Working…" : "Approve & Send to Beehiiv"}
+            {state.submitting ? "Working…" : "Approve & Send"}
           </button>
         </div>
       </div>

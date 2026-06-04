@@ -64,11 +64,13 @@ export async function POST(): Promise<NextResponse> {
 
     const htmlContent = renderNewsletterHtml(job.draft);
 
+    console.log("[send] calling Buttondown createDraftPost for week:", job.week);
     const postId = await createDraftPost(
       job.draft.subject_line,
       htmlContent,
       job.draft.preview_text
     );
+    console.log("[send] Buttondown draft created, id:", postId);
 
     await updateJob({
       status: "sent",
