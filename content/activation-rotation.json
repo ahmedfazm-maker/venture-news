@@ -1,0 +1,22 @@
+[
+  {
+    "week_mod": 0,
+    "activation_type": "story",
+    "copy": "This week we go deep on one founder journey — the messy middle that nobody talks about."
+  },
+  {
+    "week_mod": 1,
+    "activation_type": "data",
+    "copy": "The numbers are in. Here's what the market is actually telling us right now."
+  },
+  {
+    "week_mod": 2,
+    "activation_type": "analysis",
+    "copy": "We zoom out this week to map the shift happening beneath the headlines."
+  },
+  {
+    "week_mod": 3,
+    "activation_type": "community",
+    "copy": "Spotlighting voices from the community — the builders doing the quiet work."
+  }
+]

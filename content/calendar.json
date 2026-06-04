@@ -1,0 +1,24 @@
+{
+  "profiles": [
+    {
+      "week_mod": 0,
+      "primary_profile": "Founder Focus",
+      "activation_type": "story"
+    },
+    {
+      "week_mod": 1,
+      "primary_profile": "Market Pulse",
+      "activation_type": "data"
+    },
+    {
+      "week_mod": 2,
+      "primary_profile": "Deep Dive",
+      "activation_type": "analysis"
+    },
+    {
+      "week_mod": 3,
+      "primary_profile": "Community Spotlight",
+      "activation_type": "community"
+    }
+  ]
+}

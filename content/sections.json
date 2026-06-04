@@ -1,0 +1,58 @@
+[
+  {
+    "id": "opening",
+    "name": "Opening Note",
+    "wordcount_min": 80,
+    "wordcount_max": 120,
+    "format_notes": "Personal, conversational opener from the editor. Sets the week's theme. First person."
+  },
+  {
+    "id": "top_story",
+    "name": "Top Story",
+    "wordcount_min": 200,
+    "wordcount_max": 300,
+    "format_notes": "The single most important signal of the week. Lead with the insight, not the news. Include a bold pull quote."
+  },
+  {
+    "id": "funding_radar",
+    "name": "Funding Radar",
+    "wordcount_min": 150,
+    "wordcount_max": 250,
+    "format_notes": "3-5 notable funding rounds or M&A moves. Bullet list format. One sentence per item explaining why it matters."
+  },
+  {
+    "id": "trend_watch",
+    "name": "Trend Watch",
+    "wordcount_min": 150,
+    "wordcount_max": 220,
+    "format_notes": "Emerging pattern across 2-3 signals. Connect dots the reader might have missed. Opinionated."
+  },
+  {
+    "id": "founder_spotlight",
+    "name": "Founder Spotlight",
+    "wordcount_min": 120,
+    "wordcount_max": 180,
+    "format_notes": "One founder story, lesson, or quote. Can be drawn from news or community. Inspirational but grounded."
+  },
+  {
+    "id": "tool_of_week",
+    "name": "Tool of the Week",
+    "wordcount_min": 80,
+    "wordcount_max": 130,
+    "format_notes": "One product/tool relevant to founders. What it does, who it's for, why now. Non-promotional tone."
+  },
+  {
+    "id": "numbers",
+    "name": "Numbers That Matter",
+    "wordcount_min": 60,
+    "wordcount_max": 100,
+    "format_notes": "3-5 stats or data points. Each on its own line: bold the number, plain text the context."
+  },
+  {
+    "id": "closing",
+    "name": "Closing Thought",
+    "wordcount_min": 60,
+    "wordcount_max": 100,
+    "format_notes": "One-paragraph closing. Leave the reader with a question or provocation. Sign off with editor name."
+  }
+]
