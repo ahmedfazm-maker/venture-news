@@ -67,8 +67,7 @@ export async function POST(): Promise<NextResponse> {
     console.log("[send] calling Buttondown createDraftPost for week:", job.week);
     const postId = await createDraftPost(
       job.draft.subject_line,
-      htmlContent,
-      job.draft.preview_text
+      htmlContent
     );
     console.log("[send] Buttondown draft created, id:", postId);
 

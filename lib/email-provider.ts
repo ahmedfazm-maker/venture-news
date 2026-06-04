@@ -8,8 +8,7 @@ interface ButtondownEmailResponse {
 
 export async function createDraftPost(
   title: string,
-  htmlContent: string,
-  _previewText?: string
+  htmlContent: string
 ): Promise<string> {
   const apiKey = process.env.BUTTONDOWN_API_KEY;
   if (!apiKey) throw new Error("BUTTONDOWN_API_KEY is not set");
