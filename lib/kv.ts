@@ -57,7 +57,15 @@ export interface Job {
   error?: string;
 }
 
-const KEY = "job:current";
+export interface Edition {
+  week: string;
+  subject_line: string;
+  sent_at: string;
+  post_id?: string;
+}
+
+const KEY          = "job:current";
+const EDITIONS_KEY = "editions:history";
 
 export async function getJob(): Promise<Job | null> {
   return kv.get<Job>(KEY);
@@ -76,4 +84,14 @@ export async function updateJob(updates: Partial<Job>): Promise<Job> {
 
 export async function clearJob(): Promise<void> {
   await kv.del(KEY);
+}
+
+export async function getEditions(): Promise<Edition[]> {
+  return (await kv.get<Edition[]>(EDITIONS_KEY)) ?? [];
+}
+
+export async function appendEdition(edition: Edition): Promise<void> {
+  const existing = await getEditions();
+  const updated = [edition, ...existing].slice(0, 5);
+  await kv.set(EDITIONS_KEY, updated);
 }

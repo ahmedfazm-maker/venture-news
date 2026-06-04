@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getJob, updateJob } from "@/lib/kv";
+import { getJob, updateJob, appendEdition } from "@/lib/kv";
 import { renderNewsletterHtml } from "@/lib/email-template";
 import { createDraftPost } from "@/lib/email-provider";
 
@@ -75,6 +75,13 @@ export async function POST(): Promise<NextResponse> {
       status: "sent",
       beehiiv_post_id: postId,
     });
+
+    await appendEdition({
+      week: job.week,
+      subject_line: job.draft.subject_line,
+      sent_at: new Date().toISOString(),
+      post_id: postId,
+    }).catch((err) => console.error("appendEdition failed:", err));
 
     await sendConfirmationEmail(postId, job.week).catch((err) => {
       console.error("Confirmation email failed:", err);
