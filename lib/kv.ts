@@ -30,6 +30,17 @@ export interface DraftSection {
   content: string;
 }
 
+export interface VisualMetric {
+  label: string;
+  value: string;
+  source: string;
+}
+
+export interface DraftVisual {
+  type: "grid";
+  metrics: VisualMetric[];
+}
+
 export interface Job {
   status: JobStatus;
   week: string;
@@ -39,7 +50,7 @@ export interface Job {
     subject_line: string;
     preview_text: string;
     sections: DraftSection[];
-    visual?: string;
+    visual?: DraftVisual;
   };
   review_token?: string;
   beehiiv_post_id?: string;

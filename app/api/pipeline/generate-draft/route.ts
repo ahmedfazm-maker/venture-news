@@ -6,7 +6,7 @@ import {
   buildDraftSystemPrompt,
   loadSections,
 } from "@/lib/claude";
-import type { DraftSection } from "@/lib/kv";
+import type { DraftSection, DraftVisual, VisualMetric } from "@/lib/kv";
 
 interface SectionDef {
   id: string;
@@ -78,7 +78,6 @@ export async function POST(): Promise<NextResponse> {
     const signalContext = JSON.stringify(job.signals, null, 2);
 
     const sections: DraftSection[] = [];
-    let visualHtml: string | undefined;
 
     for (const section of sectionDefs) {
       const userMessage = `Write the "${section.name}" section of this week's newsletter.
@@ -113,42 +112,40 @@ Return ONLY valid JSON in this exact shape:
         parsed = { id: section.id, name: section.name, content: response };
       }
       sections.push(parsed);
+    }
 
-      if (section.id === "the_signal") {
-        const visualPrompt = `Based on The Signal content below, decide whether it is better illustrated by a "chart" or a "grid", then generate the visual as self-contained HTML with inline CSS only (no external resources, no <script> tags, no SVG).
+    // Extract 4 key metrics from The Signal for the data visual grid
+    let visual: DraftVisual | undefined;
+    const signalSection = sections.find((s) => s.id === "the_signal");
+    if (signalSection) {
+      const metricsPrompt = `Extract exactly 4 key metrics from the text below. Each metric must have a short punchy value (e.g. "$240M", "34%", "12x", "2026"), a brief label (3–5 words), and a short source name.
 
-"grid" format: a 2×2 HTML table. Each cell contains:
-- A large bold number (the key metric value, e.g. "$240M" or "34%")
-- A short metric label in smaller text below it
-- A tiny source citation in muted text below that
-
-"chart" format: a simple bar chart using HTML divs with inline styles. Use #111 bars on a white background. Label each bar. Show the value above or inside the bar.
-
-The visual must fit within 520px wide. No JavaScript. No SVG. No external fonts.
-
-The Signal:
-${parsed.content}
-
-Return ONLY valid JSON:
+Return ONLY valid JSON, no markdown:
 {
-  "type": "chart" | "grid",
-  "html": "complete self-contained HTML string with all styles inline"
-}`;
+  "metrics": [
+    { "value": "...", "label": "...", "source": "..." },
+    { "value": "...", "label": "...", "source": "..." },
+    { "value": "...", "label": "...", "source": "..." },
+    { "value": "...", "label": "...", "source": "..." }
+  ]
+}
 
-        const visualResponse = await callClaude(
-          systemPrompt,
-          [{ role: "user", content: visualPrompt }],
-          2000
-        );
+Text:
+${signalSection.content}`;
 
-        try {
-          const cleanedVisual = visualResponse.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-          const visualParsed = JSON.parse(cleanedVisual) as { type: string; html: string };
-          visualHtml = visualParsed.html;
-        } catch (parseErr) {
-          console.error("[generate-draft] Failed to parse visual response:", parseErr);
-          console.error("[generate-draft] Raw visual response:", visualResponse);
-        }
+      const metricsResponse = await callClaude(
+        systemPrompt,
+        [{ role: "user", content: metricsPrompt }],
+        600
+      );
+
+      try {
+        const cleaned = metricsResponse.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const parsed = JSON.parse(cleaned) as { metrics: VisualMetric[] };
+        visual = { type: "grid", metrics: parsed.metrics.slice(0, 4) };
+      } catch (parseErr) {
+        console.error("[generate-draft] Failed to parse metrics response:", parseErr);
+        console.error("[generate-draft] Raw metrics response:", metricsResponse);
       }
     }
 
@@ -192,7 +189,7 @@ Return ONLY valid JSON:
 
     await updateJob({
       status: "awaiting_review",
-      draft: { subject_line: subjectLine, preview_text: previewText, sections, visual: visualHtml },
+      draft: { subject_line: subjectLine, preview_text: previewText, sections, visual },
       review_token: reviewToken,
     });
 
