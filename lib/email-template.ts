@@ -17,7 +17,7 @@ export function renderNewsletterHtml(draft: Draft): string {
   });
 
   const weekLabel = draft.sections.length > 0
-    ? extractWeekFromSubject(draft.subject_line)
+    ? extractWeekFromSubject()
     : dateLabel;
 
   const sectionsHtml = draft.sections
@@ -144,7 +144,7 @@ function renderVisualPlaceholder(): string {
             </div>`;
 }
 
-function extractWeekFromSubject(subject: string): string {
+function extractWeekFromSubject(): string {
   const now = new Date();
   return now.toLocaleDateString("en-GB", {
     day: "numeric",
